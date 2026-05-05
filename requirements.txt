@@ -1,13 +1,11 @@
 torch>=2.2.0
 torchvision>=0.17.0
 transformers>=4.44.0
-diffusers>=0.30.0
 accelerate>=0.33.0
-bitsandbytes>=0.43.0
-sentencepiece>=0.1.99
-protobuf>=3.20.0
 Pillow>=10.0.0
 matplotlib>=3.8.0
 numpy>=1.24.0
 safetensors>=0.4.3
 huggingface_hub>=0.24.0
+# diffusers must be installed from git (Flux2KleinPipeline not yet on PyPI)
+# install via: pip install git+https://github.com/huggingface/diffusers.git
