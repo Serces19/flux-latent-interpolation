@@ -27,7 +27,14 @@ def get_device():
 
 
 def download_sample_images():
-    """Download apple and banana reference images from Wikipedia."""
+    """
+    Download apple and banana sample images.
+    Uses a proper User-Agent so Wikipedia doesn't block the request.
+    Falls back to generating synthetic colored images if download fails.
+    """
+    import urllib.request
+    from PIL import Image as _Image
+
     samples = {
         "assets/apple.jpg": (
             "https://upload.wikimedia.org/wikipedia/commons/thumb/"
@@ -35,18 +42,44 @@ def download_sample_images():
         ),
         "assets/banana.jpg": (
             "https://upload.wikimedia.org/wikipedia/commons/thumb/"
-            "8/8a/Banana-Chocolate-Chip-Cookies-Recipe.jpg/"
-            "512px-Banana-Chocolate-Chip-Cookies-Recipe.jpg"
+            "f/f4/Banana_fruit.jpg/512px-Banana_fruit.jpg"
         ),
     }
+    # Fallback synthetic colors if all URLs fail
+    fallbacks = {
+        "assets/apple.jpg":  (200,  40,  40),   # red
+        "assets/banana.jpg": (240, 210,  30),    # yellow
+    }
+
     Path("assets").mkdir(exist_ok=True)
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (compatible; flux-klein-pipeline/1.0; "
+            "+https://github.com/Serces19/flux-latent-interpolation)"
+        )
+    }
+
     for path, url in samples.items():
-        if not Path(path).exists():
-            print(f"Downloading {path} ...")
-            urllib.request.urlretrieve(url, path)
-            print(f"  ✓ saved {path}")
-        else:
+        if Path(path).exists():
             print(f"  ✓ {path} already exists")
+            continue
+        try:
+            print(f"Downloading {path} ...")
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req) as resp, open(path, "wb") as f:
+                f.write(resp.read())
+            print(f"  ✓ saved {path}")
+        except Exception as e:
+            print(f"  ⚠ Download failed ({e}), generating synthetic image ...")
+            color = fallbacks[path]
+            img = _Image.new("RGB", (512, 512), color=color)
+            # Add a simple gradient so it's not a flat solid
+            arr = __import__("numpy").array(img, dtype="float32")
+            for i in range(512):
+                arr[i] = arr[i] * (0.6 + 0.4 * i / 512)
+            _Image.fromarray(arr.clip(0, 255).astype("uint8")).save(path)
+            print(f"  ✓ synthetic {path} saved")
 
 
 def main():
